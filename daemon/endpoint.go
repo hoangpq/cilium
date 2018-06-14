@@ -436,12 +436,6 @@ func (d *Daemon) deleteEndpoint(ep *endpoint.Endpoint) int {
 		scopedLog.WithError(err).Warn("Ignoring error while deleting endpoint")
 	}
 
-	// Since the endpoint is already removed from endpointmanager queue,
-	// we do not need to acquire any lock on it.
-	if len(errors) == 0 {
-		metrics.EndpointStateCount.
-			WithLabelValues(ep.GetState()).Dec()
-	}
 	return len(errors)
 }
 
@@ -482,6 +476,9 @@ func (d *Daemon) deleteEndpointQuiet(ep *endpoint.Endpoint, releaseIP bool) []er
 	// Remove the endpoint before we clean up. This ensures it is no longer
 	// listed or queued for rebuilds.
 	endpointmanager.Remove(ep)
+
+	metrics.EndpointStateCount.
+		WithLabelValues(ep.GetState()).Dec()
 
 	// If dry mode is enabled, no changes to BPF maps are performed
 	if !d.DryModeEnabled() {
